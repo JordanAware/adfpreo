@@ -1,0 +1,199 @@
+{
+	"name": "populate_flightdelays_azuresql",
+	"properties": {
+		"description": "Populate our data sources",
+		"activities": [
+			{
+				"name": "populate delays - airlines",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"tableOption": "autoCreate"
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": true,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "source_flightdelaydata_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"FileName": "airlines.csv"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "airlines_delays"
+						}
+					}
+				]
+			},
+			{
+				"name": "populate delays - airports",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "populate delays - airlines",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"tableOption": "autoCreate"
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": true,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "source_flightdelaydata_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"FileName": "airports.csv"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "airports_delays"
+						}
+					}
+				]
+			},
+			{
+				"name": "populate delays - flights",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "populate delays - airports",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"tableOption": "autoCreate"
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": true,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "source_flightdelaydata_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"FileName": "flights.csv"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+						"type": "DatasetReference",
+						"parameters": {
+							"TableName": "flights_delays"
+						}
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "setup"
+		},
+		"annotations": [],
+		"lastPublishTime": "2020-10-13T04:07:03Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,29 @@
+{
+	"name": "exemplar_reviewsdata_flightdelaydata_azuresql",
+	"properties": {
+		"description": "Connection to Azure SQL database which has the review data and flight delay data",
+		"linkedServiceName": {
+			"referenceName": "flightdelays_exemplar",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"TableName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "exemplar_sources"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": {
+				"value": "@dataset().TableName",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

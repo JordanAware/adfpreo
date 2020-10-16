@@ -1,0 +1,18 @@
+{
+	"name": "exemplar_weatherdata_cosmos",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "weatherdata_exemplar",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "exemplar_sources"
+		},
+		"annotations": [],
+		"type": "CosmosDbSqlApiCollection",
+		"typeProperties": {
+			"collectionName": "Items"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
