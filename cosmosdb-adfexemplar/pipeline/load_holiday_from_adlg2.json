@@ -1,0 +1,138 @@
+{
+	"name": "load_holiday_from_adlg2",
+	"properties": {
+		"activities": [
+			{
+				"name": "copy federal holidays",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "ExcelSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "exemplar_holidaydata_adlg2",
+						"type": "DatasetReference",
+						"parameters": {
+							"SheetName": "Federal holidays"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "raw_holidays",
+						"type": "DatasetReference",
+						"parameters": {
+							"FileName": "federal/federal.csv"
+						}
+					}
+				]
+			},
+			{
+				"name": "copy school holidays",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "copy federal holidays",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "ExcelSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "exemplar_holidaydata_adlg2",
+						"type": "DatasetReference",
+						"parameters": {
+							"SheetName": "School holidays"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "raw_holidays",
+						"type": "DatasetReference",
+						"parameters": {
+							"FileName": "school/school.csv"
+						}
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "exercise_1"
+		},
+		"annotations": []
+	}
+}
