@@ -55,7 +55,7 @@
 						"referenceName": "raw_flightdelay_csv",
 						"type": "DatasetReference",
 						"parameters": {
-							"FileName": "flightdelay.csv"
+							"FileName": "flights/flight_delay.csv"
 						}
 					}
 				]
@@ -120,7 +120,7 @@
 						"referenceName": "raw_flightdelay_csv",
 						"type": "DatasetReference",
 						"parameters": {
-							"FileName": "airlinedelay.csv"
+							"FileName": "airlines/airline_delay.csv"
 						}
 					}
 				]
@@ -176,7 +176,7 @@
 						"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
 						"type": "DatasetReference",
 						"parameters": {
-							"TableName": "airport_delays"
+							"TableName": "airports_delays"
 						}
 					}
 				],
@@ -185,7 +185,7 @@
 						"referenceName": "raw_flightdelay_csv",
 						"type": "DatasetReference",
 						"parameters": {
-							"FileName": "airportdelay.csv"
+							"FileName": "airport/airport_delay.csv"
 						}
 					}
 				]
