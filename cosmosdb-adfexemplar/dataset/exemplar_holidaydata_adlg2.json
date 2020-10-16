@@ -7,7 +7,8 @@
 		},
 		"parameters": {
 			"SheetName": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "Federal holidays"
 			}
 		},
 		"folder": {
@@ -22,10 +23,7 @@
 			},
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": {
-					"value": "@dataset().SheetName",
-					"type": "Expression"
-				},
+				"fileName": "holidays.xlsx",
 				"fileSystem": "holidaydata"
 			},
 			"firstRowAsHeader": true
