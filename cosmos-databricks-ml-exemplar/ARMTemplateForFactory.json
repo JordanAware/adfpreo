@@ -1,0 +1,1624 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "cosmos-databricks-ml-exemplar"
+		},
+		"flightdelays_exemplar_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'flightdelays_exemplar'"
+		},
+		"holidaydata_exemplar_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'holidaydata_exemplar'"
+		},
+		"weatherdata_exemplar_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'weatherdata_exemplar'"
+		},
+		"holidaydata_exemplar_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://holidaydataexemplar.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/load_weather_from_cosmos')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "copy json to raw container",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "CosmosDbSqlApiSource",
+								"preferredRegions": []
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "exemplar_weatherdata_cosmos",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "raw_weather_json",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "exercise_1"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-10-15T21:33:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/exemplar_weatherdata_cosmos')]",
+				"[concat(variables('factoryId'), '/datasets/raw_weather_json')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/populate_flightdelays_azuresql')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Populate our data sources",
+				"activities": [
+					{
+						"name": "populate delays - airlines",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_flightdelaydata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "airlines.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "airlines_delays"
+								}
+							}
+						]
+					},
+					{
+						"name": "populate delays - airports",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "populate delays - airlines",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_flightdelaydata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "airports.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "airports_delays"
+								}
+							}
+						]
+					},
+					{
+						"name": "populate delays - flights",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "populate delays - airports",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_flightdelaydata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "flights.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "flights_delays"
+								}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "setup"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-10-13T04:07:03Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/source_flightdelaydata_csv')]",
+				"[concat(variables('factoryId'), '/datasets/exemplar_reviewsdata_flightdelaydata_azuresql')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/populate_reviews_azuresql')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "populate reviews - airline",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_reviewsdata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "airline.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "airline_reviews"
+								}
+							}
+						]
+					},
+					{
+						"name": "populate reviews - airport",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "populate reviews - airline",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_reviewsdata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "airport.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "airport_reviews"
+								}
+							}
+						]
+					},
+					{
+						"name": "populate reviews - lounge",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "populate reviews - airport",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_reviewsdata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "lounge.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "lounge_reviews"
+								}
+							}
+						]
+					},
+					{
+						"name": "populate reviews - seat",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "populate reviews - lounge",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"tableOption": "autoCreate"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "source_reviewsdata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "seat.csv"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "seat_reviews"
+								}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "setup"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-10-13T04:07:03Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/source_reviewsdata_csv')]",
+				"[concat(variables('factoryId'), '/datasets/exemplar_reviewsdata_flightdelaydata_azuresql')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/populate_weather_cosmos')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "populate weather",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"wildcardFileName": "*.json"
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "CosmosDbSqlApiSink",
+								"writeBehavior": "upsert",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "source_weatherdata_json",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "exemplar_weatherdata_cosmos",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "setup"
+				},
+				"annotations": [],
+				"lastPublishTime": "2020-10-13T03:52:07Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/source_weatherdata_json')]",
+				"[concat(variables('factoryId'), '/datasets/exemplar_weatherdata_cosmos')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/exemplar_holidaydata_adlg2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"SheetName": {
+						"type": "string",
+						"defaultValue": "Federal holidays"
+					}
+				},
+				"folder": {
+					"name": "exemplar_sources"
+				},
+				"annotations": [],
+				"type": "Excel",
+				"typeProperties": {
+					"sheetName": {
+						"value": "@dataset().SheetName",
+						"type": "Expression"
+					},
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "holidays.xlsx",
+						"fileSystem": "holidaydata"
+					},
+					"firstRowAsHeader": true
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/exemplar_reviewsdata_flightdelaydata_azuresql')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Connection to Azure SQL database which has the review data and flight delay data",
+				"linkedServiceName": {
+					"referenceName": "flightdelays_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"TableName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "exemplar_sources"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().TableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/flightdelays_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/exemplar_weatherdata_cosmos')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "weatherdata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "exemplar_sources"
+				},
+				"annotations": [],
+				"type": "CosmosDbSqlApiCollection",
+				"schema": {},
+				"typeProperties": {
+					"collectionName": "Items"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/weatherdata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/raw_weather_json')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "raw"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "weather.json",
+						"folderPath": "weather",
+						"fileSystem": "raw"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/source_flightdelaydata_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"FileName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "source_files"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"fileSystem": "flightdelaydata"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "IATA_CODE",
+						"type": "String"
+					},
+					{
+						"name": "AIRLINE",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/source_holidaydata_xlsx')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"SheetName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "source_files"
+				},
+				"annotations": [],
+				"type": "Excel",
+				"typeProperties": {
+					"sheetName": {
+						"value": "@dataset().SheetName",
+						"type": "Expression"
+					},
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "holidays.xlsx",
+						"fileSystem": "holidaydata"
+					},
+					"firstRowAsHeader": true
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/source_reviewsdata_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"FileName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "source_files"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"fileSystem": "reviewsdata"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "airline_name",
+						"type": "String"
+					},
+					{
+						"name": "link",
+						"type": "String"
+					},
+					{
+						"name": "title",
+						"type": "String"
+					},
+					{
+						"name": "author",
+						"type": "String"
+					},
+					{
+						"name": "author_country",
+						"type": "String"
+					},
+					{
+						"name": "date",
+						"type": "String"
+					},
+					{
+						"name": "content",
+						"type": "String"
+					},
+					{
+						"name": "aircraft",
+						"type": "String"
+					},
+					{
+						"name": "type_traveller",
+						"type": "String"
+					},
+					{
+						"name": "cabin_flown",
+						"type": "String"
+					},
+					{
+						"name": "route",
+						"type": "String"
+					},
+					{
+						"name": "overall_rating",
+						"type": "String"
+					},
+					{
+						"name": "seat_comfort_rating",
+						"type": "String"
+					},
+					{
+						"name": "cabin_staff_rating",
+						"type": "String"
+					},
+					{
+						"name": "food_beverages_rating",
+						"type": "String"
+					},
+					{
+						"name": "inflight_entertainment_rating",
+						"type": "String"
+					},
+					{
+						"name": "ground_service_rating",
+						"type": "String"
+					},
+					{
+						"name": "wifi_connectivity_rating",
+						"type": "String"
+					},
+					{
+						"name": "value_money_rating",
+						"type": "String"
+					},
+					{
+						"name": "recommended",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/source_weatherdata_json')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "source_files"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "weatherdata"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"date": {
+							"type": "string"
+						},
+						"astronomy": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"sunrise": {
+										"type": "string"
+									},
+									"sunset": {
+										"type": "string"
+									},
+									"moonrise": {
+										"type": "string"
+									},
+									"moonset": {
+										"type": "string"
+									},
+									"moon_phase": {
+										"type": "string"
+									},
+									"moon_illumination": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"maxtempC": {
+							"type": "string"
+						},
+						"maxtempF": {
+							"type": "string"
+						},
+						"mintempC": {
+							"type": "string"
+						},
+						"mintempF": {
+							"type": "string"
+						},
+						"avgtempC": {
+							"type": "string"
+						},
+						"avgtempF": {
+							"type": "string"
+						},
+						"totalSnow_cm": {
+							"type": "string"
+						},
+						"sunHour": {
+							"type": "string"
+						},
+						"uvIndex": {
+							"type": "string"
+						},
+						"hourly": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"time": {
+										"type": "string"
+									},
+									"tempC": {
+										"type": "string"
+									},
+									"tempF": {
+										"type": "string"
+									},
+									"windspeedMiles": {
+										"type": "string"
+									},
+									"windspeedKmph": {
+										"type": "string"
+									},
+									"winddirDegree": {
+										"type": "string"
+									},
+									"winddir16Point": {
+										"type": "string"
+									},
+									"weatherCode": {
+										"type": "string"
+									},
+									"weatherIconUrl": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"value": {
+													"type": "string"
+												}
+											}
+										}
+									},
+									"weatherDesc": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"value": {
+													"type": "string"
+												}
+											}
+										}
+									},
+									"precipMM": {
+										"type": "string"
+									},
+									"precipInches": {
+										"type": "string"
+									},
+									"humidity": {
+										"type": "string"
+									},
+									"visibility": {
+										"type": "string"
+									},
+									"visibilityMiles": {
+										"type": "string"
+									},
+									"pressure": {
+										"type": "string"
+									},
+									"pressureInches": {
+										"type": "string"
+									},
+									"cloudcover": {
+										"type": "string"
+									},
+									"HeatIndexC": {
+										"type": "string"
+									},
+									"HeatIndexF": {
+										"type": "string"
+									},
+									"DewPointC": {
+										"type": "string"
+									},
+									"DewPointF": {
+										"type": "string"
+									},
+									"WindChillC": {
+										"type": "string"
+									},
+									"WindChillF": {
+										"type": "string"
+									},
+									"WindGustMiles": {
+										"type": "string"
+									},
+									"WindGustKmph": {
+										"type": "string"
+									},
+									"FeelsLikeC": {
+										"type": "string"
+									},
+									"FeelsLikeF": {
+										"type": "string"
+									},
+									"uvIndex": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/flightdelays_exemplar')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('flightdelays_exemplar_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/holidaydata_exemplar')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('holidaydata_exemplar_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('holidaydata_exemplar_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/weatherdata_exemplar')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "CosmosDb",
+				"typeProperties": {
+					"connectionString": "[parameters('weatherdata_exemplar_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/load_delays_from_azuresql')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "load flight delays",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "flights_delays"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "raw_flightdelay_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "flights/flight_delay.csv"
+								}
+							}
+						]
+					},
+					{
+						"name": "load airlines delays",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "load flight delays",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "airlines_delays"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "raw_flightdelay_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "airlines/airline_delay.csv"
+								}
+							}
+						]
+					},
+					{
+						"name": "load airport delays",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "load airlines delays",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "exemplar_reviewsdata_flightdelaydata_azuresql",
+								"type": "DatasetReference",
+								"parameters": {
+									"TableName": "airports_delays"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "raw_flightdelay_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "airport/airport_delay.csv"
+								}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "exercise_1"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/exemplar_reviewsdata_flightdelaydata_azuresql')]",
+				"[concat(variables('factoryId'), '/datasets/raw_flightdelay_csv')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/raw_flightdelay_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"FileName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "raw"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"folderPath": "flightdelays",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/raw_holidays')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "holidaydata_exemplar",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"FileName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "raw"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"folderPath": "holidays",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/load_holiday_from_adlg2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "copy federal holidays",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "ExcelSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "exemplar_holidaydata_adlg2",
+								"type": "DatasetReference",
+								"parameters": {
+									"SheetName": "Federal holidays"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "raw_holidays",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "federal/federal.csv"
+								}
+							}
+						]
+					},
+					{
+						"name": "copy school holidays",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "copy federal holidays",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "ExcelSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "exemplar_holidaydata_adlg2",
+								"type": "DatasetReference",
+								"parameters": {
+									"SheetName": "School holidays"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "raw_holidays",
+								"type": "DatasetReference",
+								"parameters": {
+									"FileName": "school/school.csv"
+								}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "exercise_1"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/exemplar_holidaydata_adlg2')]",
+				"[concat(variables('factoryId'), '/datasets/raw_holidays')]"
+			]
+		}
+	]
+}
