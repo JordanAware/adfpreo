@@ -28,10 +28,13 @@
 					},
 					"sink": {
 						"type": "CosmosDbSqlApiSink",
-						"writeBehavior": "insert"
+						"writeBehavior": "upsert",
+						"disableMetricsCollection": true
 					},
 					"enableStaging": false,
-					"enableSkipIncompatibleRow": true
+					"parallelCopies": 10,
+					"enableSkipIncompatibleRow": true,
+					"dataIntegrationUnits": 128
 				},
 				"inputs": [
 					{
