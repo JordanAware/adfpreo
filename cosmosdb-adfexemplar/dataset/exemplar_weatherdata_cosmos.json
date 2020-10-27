@@ -10,8 +10,9 @@
 		},
 		"annotations": [],
 		"type": "CosmosDbSqlApiCollection",
+		"schema": {},
 		"typeProperties": {
-			"collectionName": "Items"
+			"collectionName": "weather"
 		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
