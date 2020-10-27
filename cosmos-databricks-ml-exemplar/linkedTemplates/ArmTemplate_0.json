@@ -1589,10 +1589,11 @@
 							},
 							"sink": {
 								"type": "CosmosDbSqlApiSink",
-								"writeBehavior": "upsert",
-								"disableMetricsCollection": false
+								"writeBehavior": "insert",
+								"disableMetricsCollection": true
 							},
-							"enableStaging": false
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true
 						},
 						"inputs": [
 							{
