@@ -917,7 +917,7 @@
 			"properties": {
 				"activities": [
 					{
-						"name": "populate weather",
+						"name": "copy weather data",
 						"type": "Copy",
 						"dependsOn": [],
 						"policy": {
@@ -942,11 +942,13 @@
 							},
 							"sink": {
 								"type": "CosmosDbSqlApiSink",
-								"writeBehavior": "insert",
+								"writeBehavior": "upsert",
 								"disableMetricsCollection": true
 							},
 							"enableStaging": false,
-							"enableSkipIncompatibleRow": true
+							"parallelCopies": 10,
+							"enableSkipIncompatibleRow": true,
+							"dataIntegrationUnits": 128
 						},
 						"inputs": [
 							{
@@ -1062,7 +1064,7 @@
 				"type": "CosmosDbSqlApiCollection",
 				"schema": {},
 				"typeProperties": {
-					"collectionName": "Items"
+					"collectionName": "weatherfinal"
 				}
 			},
 			"dependsOn": [
@@ -1399,181 +1401,11 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobFSLocation",
+						"fileName": "*.json",
 						"fileSystem": "weatherdata"
 					}
 				},
-				"schema": {
-					"type": "object",
-					"properties": {
-						"date": {
-							"type": "string"
-						},
-						"astronomy": {
-							"type": "array",
-							"items": {
-								"type": "object",
-								"properties": {
-									"sunrise": {
-										"type": "string"
-									},
-									"sunset": {
-										"type": "string"
-									},
-									"moonrise": {
-										"type": "string"
-									},
-									"moonset": {
-										"type": "string"
-									},
-									"moon_phase": {
-										"type": "string"
-									},
-									"moon_illumination": {
-										"type": "string"
-									}
-								}
-							}
-						},
-						"maxtempC": {
-							"type": "string"
-						},
-						"maxtempF": {
-							"type": "string"
-						},
-						"mintempC": {
-							"type": "string"
-						},
-						"mintempF": {
-							"type": "string"
-						},
-						"avgtempC": {
-							"type": "string"
-						},
-						"avgtempF": {
-							"type": "string"
-						},
-						"totalSnow_cm": {
-							"type": "string"
-						},
-						"sunHour": {
-							"type": "string"
-						},
-						"uvIndex": {
-							"type": "string"
-						},
-						"hourly": {
-							"type": "array",
-							"items": {
-								"type": "object",
-								"properties": {
-									"time": {
-										"type": "string"
-									},
-									"tempC": {
-										"type": "string"
-									},
-									"tempF": {
-										"type": "string"
-									},
-									"windspeedMiles": {
-										"type": "string"
-									},
-									"windspeedKmph": {
-										"type": "string"
-									},
-									"winddirDegree": {
-										"type": "string"
-									},
-									"winddir16Point": {
-										"type": "string"
-									},
-									"weatherCode": {
-										"type": "string"
-									},
-									"weatherIconUrl": {
-										"type": "array",
-										"items": {
-											"type": "object",
-											"properties": {
-												"value": {
-													"type": "string"
-												}
-											}
-										}
-									},
-									"weatherDesc": {
-										"type": "array",
-										"items": {
-											"type": "object",
-											"properties": {
-												"value": {
-													"type": "string"
-												}
-											}
-										}
-									},
-									"precipMM": {
-										"type": "string"
-									},
-									"precipInches": {
-										"type": "string"
-									},
-									"humidity": {
-										"type": "string"
-									},
-									"visibility": {
-										"type": "string"
-									},
-									"visibilityMiles": {
-										"type": "string"
-									},
-									"pressure": {
-										"type": "string"
-									},
-									"pressureInches": {
-										"type": "string"
-									},
-									"cloudcover": {
-										"type": "string"
-									},
-									"HeatIndexC": {
-										"type": "string"
-									},
-									"HeatIndexF": {
-										"type": "string"
-									},
-									"DewPointC": {
-										"type": "string"
-									},
-									"DewPointF": {
-										"type": "string"
-									},
-									"WindChillC": {
-										"type": "string"
-									},
-									"WindChillF": {
-										"type": "string"
-									},
-									"WindGustMiles": {
-										"type": "string"
-									},
-									"WindGustKmph": {
-										"type": "string"
-									},
-									"FeelsLikeC": {
-										"type": "string"
-									},
-									"FeelsLikeF": {
-										"type": "string"
-									},
-									"uvIndex": {
-										"type": "string"
-									}
-								}
-							}
-						}
-					}
-				}
+				"schema": {}
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/holidaydata_exemplar')]"
