@@ -20,7 +20,6 @@
 						"storeSettings": {
 							"type": "AzureBlobFSReadSettings",
 							"recursive": true,
-							"wildcardFolderPath": "weatherdata",
 							"wildcardFileName": "*.json"
 						},
 						"formatSettings": {
@@ -32,8 +31,33 @@
 						"type": "DatasetReference"
 					}
 				}
+			},
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "val",
+					"value": {
+						"value": "@activity('Lookup1').output",
+						"type": "Expression"
+					}
+				}
 			}
 		],
+		"variables": {
+			"val": {
+				"type": "Array"
+			}
+		},
 		"annotations": []
 	}
 }
