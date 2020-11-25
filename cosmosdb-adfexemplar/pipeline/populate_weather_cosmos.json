@@ -44,7 +44,7 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "exemplar_weatherdata_cosmos",
+						"referenceName": "commmon_weatherdata_cosmos",
 						"type": "DatasetReference"
 					}
 				]
