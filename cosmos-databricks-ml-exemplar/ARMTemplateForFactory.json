@@ -15,6 +15,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'holidaydata_exemplar'"
 		},
+		"weatherdata_common_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'weatherdata_common'"
+		},
 		"weatherdata_exemplar_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'weatherdata_exemplar'"
@@ -436,6 +440,75 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/exemplar_weatherdata_cosmos')]",
+				"[concat(variables('factoryId'), '/datasets/raw_weather_json')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"wildcardFileName": "*.json"
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "raw_weather_json",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Set variable1",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "Lookup1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "val",
+							"value": {
+								"value": "@activity('Lookup1').output",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"variables": {
+					"val": {
+						"type": "Array"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/raw_weather_json')]"
 			]
 		},
@@ -959,7 +1032,7 @@
 						],
 						"outputs": [
 							{
-								"referenceName": "exemplar_weatherdata_cosmos",
+								"referenceName": "commmon_weatherdata_cosmos",
 								"type": "DatasetReference",
 								"parameters": {}
 							}
@@ -974,7 +1047,30 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/source_weatherdata_json')]",
-				"[concat(variables('factoryId'), '/datasets/exemplar_weatherdata_cosmos')]"
+				"[concat(variables('factoryId'), '/datasets/commmon_weatherdata_cosmos')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/commmon_weatherdata_cosmos')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "weatherdata_common",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "exemplar_sources"
+				},
+				"annotations": [],
+				"type": "CosmosDbSqlApiCollection",
+				"schema": {},
+				"typeProperties": {
+					"collectionName": "AirportWeather"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/weatherdata_common')]"
 			]
 		},
 		{
@@ -1437,6 +1533,19 @@
 						"type": "SecureString",
 						"value": "[parameters('holidaydata_exemplar_accountKey')]"
 					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/weatherdata_common')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "CosmosDb",
+				"typeProperties": {
+					"connectionString": "[parameters('weatherdata_common_connectionString')]"
 				}
 			},
 			"dependsOn": []

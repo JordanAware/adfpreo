@@ -11,6 +11,9 @@
 		"holidaydata_exemplar_accountKey": {
 			"value": ""
 		},
+		"weatherdata_common_connectionString": {
+			"value": ""
+		},
 		"weatherdata_exemplar_connectionString": {
 			"value": ""
 		},
