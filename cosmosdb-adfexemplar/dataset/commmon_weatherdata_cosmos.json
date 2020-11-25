@@ -1,0 +1,18 @@
+{
+	"name": "commmon_weatherdata_cosmos",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "weatherdata_common",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "exemplar_sources"
+		},
+		"annotations": [],
+		"type": "CosmosDbSqlApiCollection",
+		"schema": {},
+		"typeProperties": {
+			"collectionName": "AirportWeather"
+		}
+	}
+}
